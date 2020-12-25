@@ -3,11 +3,11 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 PACKAGE constants_and_types IS
-	CONSTANT Win     : INTEGER := 8  ; -- Input bit width
-	CONSTANT Wmult   : INTEGER := 16 ; -- Multiplier bit width 2*Win
-	CONSTANT Linput  : INTEGER := 5  ; -- Input length
-	CONSTANT Lref    : INTEGER := 3  ; -- Reference length
-	CONSTANT Lfilter : INTEGER := 2  ; -- Filter Length
+	CONSTANT Win     : INTEGER := 10 ; -- Input bit width
+	CONSTANT Wmult   : INTEGER := 20 ; -- Multiplier bit width 2*Win
+	CONSTANT Linput  : INTEGER := 7  ; -- Input length (5)
+	CONSTANT Lref    : INTEGER := 4  ; -- Reference length (3)
+	CONSTANT Lfilter : INTEGER := 3  ; -- Filter Length (2)
 	SUBTYPE IN_TYPE IS STD_LOGIC_VECTOR(Win-1 DOWNTO 0);
 	SUBTYPE OUT_TYPE IS STD_LOGIC_VECTOR(Wmult-1 DOWNTO 0);
 	TYPE ARRAY_COEFF IS ARRAY (NATURAL RANGE <>) OF IN_TYPE;
@@ -34,6 +34,7 @@ port (
 	o_data_buffer           : out OUT_TYPE;
 	o_fir_coeff1         	: out IN_TYPE;
 	o_fir_coeff2         	: out IN_TYPE;
+	o_fir_coeff3         	: out IN_TYPE;
 	o_inputref           	: out IN_TYPE;
 	o_inputdata           	: out IN_TYPE;
 	o_error           		: out OUT_TYPE);
@@ -45,6 +46,7 @@ signal read_out                : integer;
 signal o_data_buffer           : OUT_TYPE;
 signal o_fir_coeff1            : IN_TYPE;
 signal o_fir_coeff2            : IN_TYPE;
+signal o_fir_coeff3            : IN_TYPE;
 signal o_inputref              : IN_TYPE;
 signal o_inputdata             : IN_TYPE;
 signal o_error                 : OUT_TYPE;
@@ -61,6 +63,7 @@ port map(
 	o_data_buffer        => o_data_buffer    ,	
 	o_fir_coeff1         => o_fir_coeff1     ,	
 	o_fir_coeff2         => o_fir_coeff2     ,	
+	o_fir_coeff3         => o_fir_coeff3     ,	
 	o_inputref           => o_inputref       ,	
 	o_inputdata          => o_inputdata      ,	
 	o_error         	 => o_error          );	

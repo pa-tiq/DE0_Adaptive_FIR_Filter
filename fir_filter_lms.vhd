@@ -13,36 +13,37 @@ port (
 	i_ref    : in  IN_TYPE	 ;
 	o_coeff1 : out IN_TYPE   ;
 	o_coeff2 : out IN_TYPE   ;
+	o_coeff3 : out IN_TYPE   ;
 	o_data   : out OUT_TYPE  ;
 	o_error  : out OUT_TYPE  );
 end fir_filter_lms;
 
 architecture fpga of fir_filter_lms is
 
-	SUBTYPE S_IN_TYPE IS signed(Win-1 downto 0);
-	SUBTYPE S_OUT_TYPE IS signed(Wmult-1 downto 0);
+	SUBTYPE S_IN_TYPE  IS signed(Win-1 downto 0)   ;
+	SUBTYPE S_OUT_TYPE IS signed(Wmult-1 downto 0) ;
 	
-	TYPE ARRAY_FILTER  IS ARRAY (0 TO Lfilter-1) OF S_IN_TYPE;
-	TYPE ARRAY_DATA    IS ARRAY (0 TO Linput-1)  OF S_IN_TYPE;
-	TYPE ARRAY_REF     IS ARRAY (0 TO Lref-1)    OF S_IN_TYPE;
-	TYPE ARRAY_PRODUCT IS ARRAY (0 TO Lfilter-1) OF S_OUT_TYPE;	
+	TYPE ARRAY_FILTER  IS ARRAY (0 TO Lfilter-1) OF S_IN_TYPE  ;
+	TYPE ARRAY_DATA    IS ARRAY (0 TO Linput-1)  OF S_IN_TYPE  ;
+	TYPE ARRAY_REF     IS ARRAY (0 TO Lref-1)    OF S_IN_TYPE  ;
+	TYPE ARRAY_PRODUCT IS ARRAY (0 TO Lfilter-1) OF S_OUT_TYPE ;	
 
-	SIGNAL  xemu0, xemu1 :  S_IN_TYPE;
-	SIGNAL  emu          :  S_IN_TYPE;
-	SIGNAL  y, sxty      :  S_OUT_TYPE;
-	SIGNAL  e, sxtd 	 :  S_OUT_TYPE;
+	SIGNAL  xemu0, xemu1 :  S_IN_TYPE  ;
+	SIGNAL  emu          :  S_IN_TYPE  ;
+	SIGNAL  y, sxty      :  S_OUT_TYPE ;
+	SIGNAL  e, sxtd 	 :  S_OUT_TYPE ;
 
-	SIGNAL  f       	 :  ARRAY_FILTER;   
-	SIGNAL  x       	 :  ARRAY_DATA;    
-	SIGNAL  d       	 :  ARRAY_REF;     
-	SIGNAL  p, xemu 	 :  ARRAY_PRODUCT;
+	SIGNAL  f       	 :  ARRAY_FILTER  ;   
+	SIGNAL  x       	 :  ARRAY_DATA    ;    
+	SIGNAL  d       	 :  ARRAY_REF     ;     
+	SIGNAL  p, xemu 	 :  ARRAY_PRODUCT ;
 
 begin
 	dsxt: PROCESS (d)  -- make d a Wmult bit number
 	BEGIN
-		sxtd(Win-1 DOWNTO 0) <= d(2);
+		sxtd(Win-1 DOWNTO 0) <= d(Lref-1);
 		FOR k IN Wmult-1 DOWNTO Win LOOP
-			sxtd(k) <= d(2)(Win-1);
+			sxtd(k) <= d(Lref-1)(Win-1);
 		END LOOP;
 	END PROCESS;
 
@@ -97,5 +98,6 @@ begin
 	o_error <= std_logic_vector(e);
 	o_coeff1 <= std_logic_vector(f(0));
 	o_coeff2 <= std_logic_vector(f(1));
+	o_coeff3 <= std_logic_vector(f(2));
 
 END fpga;

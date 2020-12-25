@@ -4,6 +4,7 @@ add wave -noupdate -format Logic -radix unsigned /tb_fir_filter_test/u_fir_filte
 add wave -noupdate -format Logic -radix unsigned /tb_fir_filter_test/u_fir_filter_lms_test/reset
 add wave -noupdate -format Logic -radix decimal /tb_fir_filter_test/u_fir_filter_lms_test/o_fir_coeff1
 add wave -noupdate -format Logic -radix decimal /tb_fir_filter_test/u_fir_filter_lms_test/o_fir_coeff2
+add wave -noupdate -format Logic -radix decimal /tb_fir_filter_test/u_fir_filter_lms_test/o_fir_coeff3
 add wave -noupdate -format AnalogStep -radix decimal /tb_fir_filter_test/u_fir_filter_lms_test/o_inputdata
 add wave -noupdate -format Logic -radix decimal /tb_fir_filter_test/u_fir_filter_lms_test/o_inputdata
 add wave -noupdate -format AnalogStep -radix decimal /tb_fir_filter_test/u_fir_filter_lms_test/o_inputref

@@ -13,6 +13,7 @@ entity fir_filter_lms_test is
 		o_data_buffer         : out OUT_TYPE;
 		o_fir_coeff1          : out IN_TYPE;
 		o_fir_coeff2          : out IN_TYPE;
+		o_fir_coeff3          : out IN_TYPE;
 		o_inputref		      : out IN_TYPE;
 		o_inputdata		      : out IN_TYPE;
 		o_error               : out OUT_TYPE);
@@ -24,15 +25,15 @@ architecture rtl of fir_filter_lms_test is
 	--d = [10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9];
 	--y = [-7,-1,5,20,-9,-36,5,40,-8,-50,2,48,-4,-53,-1,49,-3,-52];
 	
-	constant noisy_size : integer := 15;
+	constant noisy_size : integer := 64;
 	type T_NOISY_INPUT is array(0 to noisy_size-1) of integer range (-2**Win) to (2**Win-1);
 	type T_COEFF_INPUT is array(0 to LFilter-1) of integer range (-2**Win) to (2**Win-1);
 
 	constant NOISY_ARRAY : T_NOISY_INPUT := (
-		64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64
+		64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111
 	);
 	constant NOISYF_ARRAY : T_NOISY_INPUT := (
-		10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9
+		10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41
 	);
 
 	-- degrau tamanho 512
@@ -124,6 +125,7 @@ architecture rtl of fir_filter_lms_test is
 		i_ref    : in  IN_TYPE	   ;
 		o_coeff1 : out IN_TYPE     ;
 		o_coeff2 : out IN_TYPE     ;
+		o_coeff3 : out IN_TYPE     ;
 		o_data   : out OUT_TYPE    ;
 		o_error  : out OUT_TYPE    );
 	end component;
@@ -143,6 +145,7 @@ begin
 		i_ref       => i_ref 		,
 		o_coeff1     => o_fir_coeff1 		,
 		o_coeff2     => o_fir_coeff2 		,
+		o_coeff3     => o_fir_coeff3 		,
 		o_data     	=> o_data_buffer ,
 		o_error     => o_error       );
 
