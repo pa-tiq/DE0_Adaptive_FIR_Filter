@@ -1,6 +1,6 @@
-vcom -reportprogress 300 -work work C:/Users/patiq/Documents/Projects/DE0_Adaptive_FIR_Filter/fir_filter_lms.vhd
-vcom -reportprogress 300 -work work C:/Users/patiq/Documents/Projects/DE0_Adaptive_FIR_Filter/fir_filter_lms_test.vhd
 vcom -reportprogress 300 -work work C:/Users/patiq/Documents/Projects/DE0_Adaptive_FIR_Filter/testbench/tb_fir_filter_test.vhd
+vcom -reportprogress 300 -work work C:/Users/patiq/Documents/Projects/DE0_Adaptive_FIR_Filter/fir_filter_lms_test.vhd
+vcom -reportprogress 300 -work work C:/Users/patiq/Documents/Projects/DE0_Adaptive_FIR_Filter/fir_filter_lms.vhd
 
 vcom  -work work ../fir_filter_lms.vhd
 vcom  -work work ../fir_filter_lms_test.vhd

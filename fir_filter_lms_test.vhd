@@ -8,15 +8,13 @@ entity fir_filter_lms_test is
 	generic( 
 		BUTTON_HIGH 	: STD_LOGIC := '0' );
 	port (
-		clk              	  : in  std_logic;
-		reset                 : in  std_logic;
-		o_data_buffer         : out OUT_TYPE;
-		o_fir_coeff1          : out IN_TYPE;
-		o_fir_coeff2          : out IN_TYPE;
-		o_fir_coeff3          : out IN_TYPE;
-		o_inputref		      : out IN_TYPE;
-		o_inputdata		      : out IN_TYPE;
-		o_error               : out OUT_TYPE);
+		clk              : in  std_logic;
+		reset            : in  std_logic;
+		o_data_buffer    : out OUT_TYPE;
+		o_fir_coeff      : out ARRAY_COEFF ;
+		o_inputref		 : out IN_TYPE;
+		o_inputdata		 : out IN_TYPE;
+		o_error          : out OUT_TYPE);
 end fir_filter_lms_test;
 
 architecture rtl of fir_filter_lms_test is
@@ -25,15 +23,16 @@ architecture rtl of fir_filter_lms_test is
 	--d = [10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9];
 	--y = [-7,-1,5,20,-9,-36,5,40,-8,-50,2,48,-4,-53,-1,49,-3,-52];
 	
-	constant noisy_size : integer := 64;
+	constant noisy_size : integer := 128;
+	type T_NOISY_SLV is array(0 to noisy_size-1)   of IN_TYPE ;
 	type T_NOISY_INPUT is array(0 to noisy_size-1) of integer range (-2**Win) to (2**Win-1);
-	type T_COEFF_INPUT is array(0 to LFilter-1) of integer range (-2**Win) to (2**Win-1);
+	type T_COEFF_INPUT is array(0 to LFilter-1)    of integer range (-2**Win) to (2**Win-1);
 
 	constant NOISY_ARRAY : T_NOISY_INPUT := (
-		64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111
+		64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111
 	);
 	constant NOISYF_ARRAY : T_NOISY_INPUT := (
-		10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41
+		10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41
 	);
 
 	-- degrau tamanho 512
@@ -123,17 +122,15 @@ architecture rtl of fir_filter_lms_test is
 		reset    : in  std_logic   ;
 		i_data   : in  IN_TYPE	   ;
 		i_ref    : in  IN_TYPE	   ;
-		o_coeff1 : out IN_TYPE     ;
-		o_coeff2 : out IN_TYPE     ;
-		o_coeff3 : out IN_TYPE     ;
+		o_coeff  : out ARRAY_COEFF ;
 		o_data   : out OUT_TYPE    ;
 		o_error  : out OUT_TYPE    );
 	end component;
 
 	signal i_data   : IN_TYPE;
-	signal i_ref   : IN_TYPE;
-	signal NOISY	: ARRAY_COEFF(0 to noisy_size-1);
-	signal NOISYF	: ARRAY_COEFF(0 to noisy_size-1);
+	signal i_ref    : IN_TYPE;
+	signal NOISY	: T_NOISY_SLV;
+	signal NOISYF	: T_NOISY_SLV;
 
 begin
 	
@@ -143,9 +140,7 @@ begin
 		reset       => reset      	,
 		i_data      => i_data 		,
 		i_ref       => i_ref 		,
-		o_coeff1     => o_fir_coeff1 		,
-		o_coeff2     => o_fir_coeff2 		,
-		o_coeff3     => o_fir_coeff3 		,
+		o_coeff     => o_fir_coeff  ,
 		o_data     	=> o_data_buffer ,
 		o_error     => o_error       );
 
@@ -159,6 +154,8 @@ begin
 		if(reset=BUTTON_HIGH) then
 			i_data      <= (others=>'0'); 
 			i_ref       <= (others=>'0'); 
+			o_inputref       <= (others=>'0'); 
+			o_inputdata       <= (others=>'0'); 
 			count 		:= 0;
 			count2 		:= 0;
 			first_time	:='0';
@@ -177,7 +174,6 @@ begin
 				if(count < noisy_size) then
 					i_data <= NOISY(count);
 					i_ref <= NOISYF(count);					
-					count := count + 1;
 				else
 					i_data <= (others=>'0');
 					i_ref <= (others=>'0');
@@ -191,11 +187,11 @@ begin
 				--	o_fir_coeff <= (others=>'0');
 				--end if;
 				---------------------------------------------------
+				count := count+1;
 				o_inputref <= i_ref;
 				o_inputdata <= i_data;
-				--count := count+1;
 			end if;
-		end if;
+		end if;		
 	end process p_input;
 
 
