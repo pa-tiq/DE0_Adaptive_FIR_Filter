@@ -11,30 +11,41 @@ entity fir_filter_lms_test is
 		clk              	  : in  std_logic;
 		reset                 : in  std_logic;
 		o_data_buffer         : out OUT_TYPE;
-		o_fir_coeff1          : out IN_TYPE;
-		o_fir_coeff2          : out IN_TYPE;
-		o_fir_coeff3          : out IN_TYPE;
+		o_fir_coeff           : out ARRAY_COEFF;
 		o_inputref		      : out IN_TYPE;
 		o_inputdata		      : out IN_TYPE;
 		o_error               : out OUT_TYPE);
 end fir_filter_lms_test;
 
 architecture rtl of fir_filter_lms_test is
-
-	--x = [64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64];
-	--d = [10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9];
-	--y = [-7,-1,5,20,-9,-36,5,40,-8,-50,2,48,-4,-53,-1,49,-3,-52];
 	
-	constant noisy_size : integer := 64;
-	type T_NOISY_INPUT is array(0 to noisy_size-1) of integer range (-2**Win) to (2**Win-1);
-	type T_COEFF_INPUT is array(0 to LFilter-1) of integer range (-2**Win) to (2**Win-1);
+	constant p : integer := (2**(Win-1))-1; --precision
+	constant in_size   : integer := 548;
+	constant out_size  : integer := 1060;
 
-	constant NOISY_ARRAY : T_NOISY_INPUT := (
-		64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111
+	type T_IN_ARRAY    is array (0 to in_size-1)  of integer range -(p+1) to p;
+	type T_OUT_ARRAY   is array (0 to out_size-1) of integer range (-2**Win) to (2**Win-1);
+	type T_COEFF_INPUT is array (0 to LFilter-1)  of integer range (-2**Win) to (2**Win-1);
+
+	TYPE T_ARRAY_COEFF_IN  IS ARRAY (0 TO in_size-1)  OF IN_TYPE;
+	TYPE T_ARRAY_COEFF_OUT IS ARRAY (0 TO out_size-1) OF IN_TYPE;
+
+	constant IN_ARRAY: T_IN_ARRAY := (
+		p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p
 	);
-	constant NOISYF_ARRAY : T_NOISY_INPUT := (
-		10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41
+
+	constant OUT_ARRAY: T_OUT_ARRAY := (
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	);
+
+	-- tamanho 64, Win = 8, entrada do uwe
+	--constant NOISY_ARRAY : T_NOISY_INPUT := (
+	--	64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111
+	--);
+	--constant NOISYF_ARRAY : T_NOISY_INPUT := (
+	--	10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41
+	--);
+	-----------------------------------------
 
 	-- degrau tamanho 512
 	--constant NOISY_ARRAY : T_NOISY_INPUT := (
@@ -123,17 +134,15 @@ architecture rtl of fir_filter_lms_test is
 		reset    : in  std_logic   ;
 		i_data   : in  IN_TYPE	   ;
 		i_ref    : in  IN_TYPE	   ;
-		o_coeff1 : out IN_TYPE     ;
-		o_coeff2 : out IN_TYPE     ;
-		o_coeff3 : out IN_TYPE     ;
+		o_coeff  : out ARRAY_COEFF ;
 		o_data   : out OUT_TYPE    ;
 		o_error  : out OUT_TYPE    );
 	end component;
 
 	signal i_data   : IN_TYPE;
-	signal i_ref   : IN_TYPE;
-	signal NOISY	: ARRAY_COEFF(0 to noisy_size-1);
-	signal NOISYF	: ARRAY_COEFF(0 to noisy_size-1);
+	signal i_ref    : IN_TYPE;
+	signal NOISY	: T_ARRAY_COEFF_IN;
+	signal NOISYF	: T_ARRAY_COEFF_OUT;
 
 begin
 	
@@ -143,9 +152,7 @@ begin
 		reset       => reset      	,
 		i_data      => i_data 		,
 		i_ref       => i_ref 		,
-		o_coeff1     => o_fir_coeff1 		,
-		o_coeff2     => o_fir_coeff2 		,
-		o_coeff3     => o_fir_coeff3 		,
+		o_coeff     => o_fir_coeff  ,
 		o_data     	=> o_data_buffer ,
 		o_error     => o_error       );
 
@@ -158,28 +165,34 @@ begin
 	begin
 		if(reset=BUTTON_HIGH) then
 			i_data      <= (others=>'0'); 
-			i_ref       <= (others=>'0'); 
+			i_ref       <= (others=>'0'); 			
+			o_inputdata <= (others=>'0'); 
+			o_inputref  <= (others=>'0'); 
 			count 		:= 0;
 			count2 		:= 0;
 			first_time	:='0';
 		elsif(falling_edge(clk)) then
 			if(first_time='0') then
-				for k in 0 to noisy_size-1 loop
-					NOISYF(k)  <=  std_logic_vector(to_signed(NOISYF_ARRAY(k),Win));
+				for k in 0 to in_size-1 loop
+					NOISY(k)  <=  std_logic_vector(to_signed(IN_ARRAY(k),Win));
 				end loop;			
-				for j in 0 to noisy_size-1 loop
-					NOISY(j)  <=  std_logic_vector(to_signed(NOISY_ARRAY(j),Win));
+				for j in 0 to out_size-1 loop
+					NOISYF(j)  <=  std_logic_vector(to_signed(OUT_ARRAY(j),Win));
 				end loop;
 				first_time := '1';
 			else
 				
 				-- NOISY ANALOG SIGNAL
-				if(count < noisy_size) then
-					i_data <= NOISY(count);
+				if(count < in_size) then
+					i_data <= NOISY(count);					
+				else
+					i_data <= (others=>'0');
+				end if;
+
+				if(count < out_size) then
 					i_ref <= NOISYF(count);					
 					count := count + 1;
 				else
-					i_data <= (others=>'0');
 					i_ref <= (others=>'0');
 				end if;
 				-------------------------------------------------

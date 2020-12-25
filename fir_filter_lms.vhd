@@ -7,15 +7,13 @@ use ieee.numeric_std.all;
 
 entity fir_filter_lms is
 port (
-	clk      : in  std_logic ;
-	reset    : in  std_logic ;
-	i_data   : in  IN_TYPE	 ;
-	i_ref    : in  IN_TYPE	 ;
-	o_coeff1 : out IN_TYPE   ;
-	o_coeff2 : out IN_TYPE   ;
-	o_coeff3 : out IN_TYPE   ;
-	o_data   : out OUT_TYPE  ;
-	o_error  : out OUT_TYPE  );
+	clk      : in  std_logic   ;
+	reset    : in  std_logic   ;
+	i_data   : in  IN_TYPE	   ;
+	i_ref    : in  IN_TYPE	   ;
+	o_coeff  : out ARRAY_COEFF ;
+	o_data   : out OUT_TYPE    ;
+	o_error  : out OUT_TYPE    );
 end fir_filter_lms;
 
 architecture fpga of fir_filter_lms is
@@ -45,7 +43,7 @@ begin
 		FOR k IN Wmult-1 DOWNTO Win LOOP
 			sxtd(k) <= d(Lref-1)(Win-1);
 		END LOOP;
-	END PROCESS;
+	END PROCESS dsxt;
 
 	Store: PROCESS (clk, reset)  -- Store these data or	coefficients in registers
 	BEGIN                       
@@ -92,12 +90,20 @@ begin
 		FOR k IN Wmult-1 DOWNTO Win+1 LOOP
 			sxty(k) <= y(y'high); --y'high = Wmult
 		END LOOP;
-	END PROCESS;
+	END PROCESS ysxt;
 
 	o_data <= std_logic_vector(sxty);    -- Monitor some test signals
-	o_error <= std_logic_vector(e);
-	o_coeff1 <= std_logic_vector(f(0));
-	o_coeff2 <= std_logic_vector(f(1));
-	o_coeff3 <= std_logic_vector(f(2));
+	o_error <= std_logic_vector(e);	
+
+	coeff: PROCESS (clk, reset)
+	BEGIN
+		IF reset = '0' THEN      -- Asynchronous clear
+			o_coeff    <=  (others=>(others=>'0'));
+		ELSIF rising_edge(clk) THEN
+			FOR k IN 0 TO Lfilter-1 LOOP
+				o_coeff(k) <= std_logic_vector(f(k));
+			END LOOP;
+		END IF;
+	END PROCESS coeff;
 
 END fpga;
