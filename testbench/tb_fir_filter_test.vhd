@@ -34,8 +34,8 @@ port (
 	o_data_buffer           : out OUT_TYPE;
 	o_fir_coeff1         	: out IN_TYPE;
 	o_fir_coeff2         	: out IN_TYPE;
-	o_inputref           		: out IN_TYPE;
-	o_inputdata           		: out IN_TYPE;
+	o_inputref           	: out IN_TYPE;
+	o_inputdata           	: out IN_TYPE;
 	o_error           		: out OUT_TYPE);
 end component;
 
