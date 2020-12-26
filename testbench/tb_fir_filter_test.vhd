@@ -8,13 +8,12 @@ use ieee.numeric_std.all;
 --64   512
 
 PACKAGE constants_and_types IS
-	CONSTANT Win     : INTEGER := 8    ; -- Input bit width
-	CONSTANT Wmult   : INTEGER := 16   ; -- Multiplier bit width 2*Win
-	CONSTANT Wadd 	 : INTEGER := 27   ;-- Adder width = Wmult+log2(L)-1
-	CONSTANT Lfilter : INTEGER := 64   ; -- Filter Length
-	SUBTYPE IN_TYPE  IS STD_LOGIC_VECTOR(Win-1 DOWNTO 0)   ;
-	SUBTYPE OUT_TYPE IS STD_LOGIC_VECTOR(Wmult-1 DOWNTO 0) ;
-	TYPE ARRAY_COEFF IS ARRAY (0 TO Lfilter-1) OF IN_TYPE  ;
+	CONSTANT Win     : INTEGER := 8 ; -- Input bit width
+	CONSTANT Wmult   : INTEGER := 16 ; -- Multiplier bit width 2*Win
+	CONSTANT Lfilter : INTEGER := 2  ; -- Filter Length (2)
+	SUBTYPE IN_TYPE IS STD_LOGIC_VECTOR(Win-1 DOWNTO 0);
+	SUBTYPE OUT_TYPE IS STD_LOGIC_VECTOR(Wmult-1 DOWNTO 0);
+	TYPE ARRAY_COEFF IS ARRAY (0 to Lfilter-1) OF IN_TYPE;
 END constants_and_types;
 
 LIBRARY work;

@@ -2,6 +2,7 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate -format Logic -radix unsigned /tb_fir_filter_test/u_fir_filter_lms_test/clk
 add wave -noupdate -format Logic -radix unsigned /tb_fir_filter_test/u_fir_filter_lms_test/reset
+add wave -noupdate -format Analog -radix decimal /tb_fir_filter_test/u_fir_filter_lms_test/o_fir_coeff
 add wave -noupdate -format Logic -radix decimal /tb_fir_filter_test/u_fir_filter_lms_test/o_fir_coeff
 add wave -noupdate -format AnalogStep -radix decimal /tb_fir_filter_test/u_fir_filter_lms_test/o_inputdata
 add wave -noupdate -format Logic -radix decimal /tb_fir_filter_test/u_fir_filter_lms_test/o_inputdata

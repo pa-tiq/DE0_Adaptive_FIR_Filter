@@ -45,19 +45,28 @@ begin
 	END PROCESS dsxt;
 
 	Store: PROCESS (clk, reset)  -- Store these data or	coefficients in registers
-	BEGIN                       
+	BEGIN                      
 		IF reset = '0' THEN  -- Asynchronous clear
 			d <= (others=>'0');
+			d_temp <= (others=>'0');
 			x <= (others=>(others=>'0'));
 			f <= (others=>(others=>'0'));
-		ELSIF rising_edge(clk) THEN
+		ELSIF (rising_edge(clk)) THEN
 			d <= signed(i_ref);
+			--d <= d_temp;
 			x <= signed(i_data) & x(0 to Lfilter-2);
-			FOR k IN 0 TO Lfilter-1 LOOP
+			FOR k IN f'range LOOP
 				f(k)  <= f(k) + xemu(k)(Wmult-1 DOWNTO Win);
 			END LOOP;
 		END IF;
 	END PROCESS Store;
+
+	--MulGen1: FOR i IN 0 TO Lfilter-1 GENERATE
+	--	p(i) <= f(i) * x(i);
+	--END GENERATE;
+	--MulGen2: FOR i IN 0 TO Lfilter-1 GENERATE
+	--	xemu(i) <= emu * x(i);
+	--END GENERATE;	
 
 	Mult : process (reset,clk)
 	begin
@@ -65,61 +74,48 @@ begin
 			p <= (others=>(others=>'0'));
 			xemu <= (others=>(others=>'0'));
 		elsif(rising_edge(clk)) then
-			for k in 0 to Lfilter-1 loop
+			for k in p'range loop
 				p(k) <= x(k) * f(k);
 				xemu(k) <= emu * x(k);
 			end loop;
 		end if;
 	end process Mult;
-	
-	Sum1 : process (reset,clk)
-	begin
-		if(reset='0') then
-			add_st0 <= (others=>(others=>'0'));
-		elsif(rising_edge(clk)) then
-			for k in 0 to (LFilter/2)-1 loop
-				add_st0(k) <= resize(p(2*k),Wadd)  + resize(p(2*k+1),Wadd);
-			end loop;
-		end if;
-	end process Sum1;
 
 	Sum2 : process (reset,clk)
-		variable add_temp  : signed(Wadd downto 0);
-	begin
-		add_temp := (others=>'0');
+		variable add_temp  : S_OUT_TYPE;
+	begin		
 		if(reset='0') then
 			y  <= (others=>'0');
 			add_temp := (others=>'0');
-		elsif(rising_edge(clk)) then			
-			for k in 0 to (LFilter/2)-1 loop
-				add_temp := resize(add_st0(k),Wadd+1) + add_temp;
-			end loop;
-			y <= resize(add_temp,Wmult);					
-		end if;
+		elsif(rising_edge(clk)) then
+			add_temp := (others=>'0');			
+			for k in p'range loop
+				add_temp := p(k) + add_temp;
+			end loop;	
+			y <= add_temp;						
+		end if;			
 	end process Sum2;
 
-	ysxt: PROCESS (y) -- scale y by 128 because x is fraction
+	p_output: PROCESS (clk, reset)
 	BEGIN
-		sxty(Win DOWNTO 0) <= y(Wmult-1 DOWNTO Win-1);
-		FOR k IN Wmult-1 DOWNTO Win+1 LOOP
-			sxty(k) <= y(y'high); --y'high = Wmult
-		END LOOP;
-	END PROCESS ysxt;
-
-	e       <= sxtd - sxty            ;
-	emu     <= e(Win DOWNTO 1)        ; -- from xemu makes mu=1/4
-	o_data  <= std_logic_vector(sxty) ; 
-	o_error <= std_logic_vector(e)    ;	
-
-	coeff: PROCESS (clk, reset)
-	BEGIN
-		IF reset = '0' THEN      -- Asynchronous clear
+		IF reset = '0' THEN      -- Asynchronous clear		
+			e <= (others => '0');	
+			emu <= (others => '0');	
+			o_error <= (others => '0');	
+			o_data <= (others => '0');	
 			o_coeff    <=  (others=>(others=>'0'));
-		ELSIF rising_edge(clk) THEN
-			FOR k IN 0 TO Lfilter-1 LOOP
+		ELSIF (rising_edge(clk)) THEN
+			e <= sxtd - sxty;			
+			-- TAXA DE APRENDIZADO -------------------------------
+			emu <= e(Win+learning_rate DOWNTO learning_rate+1);    
+			------------------------------------------------------
+			o_error <= std_logic_vector(e);
+			o_data <= std_logic_vector(sxty);    -- Monitor some test signals
+			FOR k IN o_coeff'range LOOP
 				o_coeff(k) <= std_logic_vector(f(k));
 			END LOOP;
 		END IF;
-	END PROCESS coeff;
+	END PROCESS p_output;	
+
 
 END fpga;

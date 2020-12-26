@@ -151,10 +151,9 @@ begin
 				read_out <= count;
 				
 				-- NOISY ANALOG SIGNAL
-				if(count < in_size) then
-					i_data <= NOISY(count);	
-					i_ref  <= NOISYF(count);					
-					count := count + 1;				
+				if(count < noisy_size) then
+					i_data <= NOISY(count);
+					i_ref <= NOISYF(count);					
 				else
 					--i_data <= (others=>'0');
 					--i_ref <= (others=>'0');
@@ -175,11 +174,11 @@ begin
 				--	o_fir_coeff <= (others=>'0');
 				--end if;
 				---------------------------------------------------
+				count := count+1;
 				o_inputref <= i_ref;
 				o_inputdata <= i_data;
-				--count := count+1;
 			end if;
-		end if;
+		end if;		
 	end process p_input;
 
 
