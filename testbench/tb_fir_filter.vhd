@@ -3,9 +3,10 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 PACKAGE constants_and_types IS
-	CONSTANT Win     : INTEGER := 8 ; -- Input bit width
-	CONSTANT Wmult   : INTEGER := 16 ; -- Multiplier bit width 2*Win
-	CONSTANT Lfilter : INTEGER := 4  ; -- Filter Length (2)
+	CONSTANT Win     : INTEGER := 10 ; -- Input bit width
+	CONSTANT Wmult   : INTEGER := 2*Win ; -- Multiplier bit width 2*Win
+	CONSTANT Lfilter : INTEGER := 512  ; -- Filter Length (2)
+	CONSTANT learning_rate : INTEGER :=-1; -- 1 to 4
 	SUBTYPE IN_TYPE IS STD_LOGIC_VECTOR(Win-1 DOWNTO 0);
 	SUBTYPE OUT_TYPE IS STD_LOGIC_VECTOR(Wmult-1 DOWNTO 0);
 	TYPE ARRAY_COEFF IS ARRAY (0 to Lfilter-1) OF IN_TYPE;
@@ -24,18 +25,52 @@ entity tb_fir_filter is
 end tb_fir_filter;
 
 architecture behave of tb_fir_filter is
+	
+	constant p : integer := (2**(Win-1))-1; --precision
+	constant pt : integer := p-500;
+	constant pf : integer := p-100;
 
-constant noisy_size : integer := 128;
-type T_NOISY_SLV is array(0 to noisy_size-1)   of IN_TYPE ;
-type T_NOISY_INPUT is array(0 to noisy_size-1) of integer range (-2**Win) to (2**Win-1);
-type T_COEFF_INPUT is array(0 to LFilter-1)    of integer range (-2**Win) to (2**Win-1);
+	constant in_size   : integer := 2000;
+	constant out_size  : integer := 2512;
 
-constant NOISY_ARRAY : T_NOISY_INPUT := (
-	64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111
+	type T_IN_ARRAY    is array (0 to in_size-1)  of integer range -(p+1) to p;
+	type T_OUT_ARRAY   is array (0 to out_size-1) of integer range -(p+1) to p;
+	type T_COEFF_INPUT is array (0 to LFilter-1)  of integer range -(p+1) to p;
+
+	TYPE T_ARRAY_COEFF_IN  IS ARRAY (0 TO in_size-1)  OF IN_TYPE;
+	TYPE T_ARRAY_COEFF_OUT IS ARRAY (0 TO out_size-1) OF IN_TYPE;
+
+-- in=548, out=1060, degrau
+--constant IN_ARRAY: T_IN_ARRAY := (
+--	p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p
+--);
+--constant OUT_ARRAY: T_OUT_ARRAY := (
+--	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,p,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+--);
+
+-- in=1000, out=1512, dez pulsos retangulares
+--constant IN_ARRAY: T_IN_ARRAY := (
+--	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt
+--);
+--constant OUT_ARRAY: T_OUT_ARRAY := (
+--	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+--);
+
+-- in=2000, out=2512, pulsos retangulares
+constant IN_ARRAY: T_IN_ARRAY := (
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt,pt
 );
-constant NOISYF_ARRAY : T_NOISY_INPUT := (
-	10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41
+constant OUT_ARRAY: T_OUT_ARRAY := (
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,pf,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 );
+
+-- tamanho 128 (do uwe meyer baese)
+--constant NOISY_ARRAY : T_NOISY_INPUT := (
+--	64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111,64,111,-64,-111
+--);
+--constant NOISYF_ARRAY : T_NOISY_INPUT := (
+--	10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41,10,60,9,-41,10,60,10,-39,11,60,10,-40,10,59,9,-41
+--);
 
 component fir_filter_lms
 port (
@@ -48,15 +83,16 @@ port (
 	o_error  : out OUT_TYPE    );
 end component;
 
-signal clk                     : std_logic:='0';
-signal reset                   : std_logic;
+signal clk      : std_logic:='0';
+signal reset    : std_logic;
 signal i_data   : IN_TYPE;
 signal i_ref    : IN_TYPE;
-signal o_data          : OUT_TYPE;
-signal o_coeff             : ARRAY_COEFF;
-signal o_error                 : OUT_TYPE;
-signal NOISY	: T_NOISY_SLV;
-signal NOISYF	: T_NOISY_SLV;
+signal o_data   : OUT_TYPE;
+signal o_coeff  : ARRAY_COEFF;
+signal o_error  : OUT_TYPE;
+signal NOISY	: T_ARRAY_COEFF_IN;
+signal NOISYF	: T_ARRAY_COEFF_OUT;
+signal read_out : integer := 0;
 
 begin
 
@@ -69,8 +105,8 @@ port map(
 	reset       => reset      	,
 	i_data      => i_data 		,
 	i_ref       => i_ref 		,
-	o_coeff     => o_coeff  ,
-	o_data     	=> o_data ,
+	o_coeff     => o_coeff      ,
+	o_data     	=> o_data       ,
 	o_error     => o_error     );
 
 p_input : process (reset,clk)
@@ -83,24 +119,29 @@ begin
 		first_time	:='0';
 	elsif(falling_edge(clk)) then
 		if(first_time='0') then
-			for k in NOISYF'range loop
-				NOISYF(k)  <=  std_logic_vector(to_signed(NOISYF_ARRAY(k),Win));
-			end loop;			
 			for j in NOISY'range loop
-				NOISY(j)  <=  std_logic_vector(to_signed(NOISY_ARRAY(j),Win));
+				NOISY(j)  <=  std_logic_vector(to_signed(IN_ARRAY(j),Win));
 			end loop;
+			for k in NOISYF'range loop
+				NOISYF(k)  <=  std_logic_vector(to_signed(OUT_ARRAY(k),Win));
+			end loop;	
 			first_time := '1';
-		else
+		else			
 			
 			-- NOISY ANALOG SIGNAL
-			if(count < noisy_size) then
-				i_data <= NOISY(count);
-				i_ref <= NOISYF(count);					
+			if(count < NOISY'high) then
+				i_data <= NOISY(count);	
 			else
 				i_data <= (others=>'0');
+			end if;
+
+			if(count < NOISYF'high) then
+				i_ref <= NOISYF(count);					
+				
+			else
 				i_ref <= (others=>'0');
 			end if;
-			-------------------------------------------------
+			-----------------------------------
 
 			-- COEFFICIENTS
 			--if(count < Lfilter-1) then
@@ -111,23 +152,26 @@ begin
 			---------------------------------------------------
 			count := count+1;
 		end if;
-	end if;		
+	end if;
+	read_out <= count;	
 end process p_input;
 
 
---p_dump  : process(reset,read_out)
---file test_vector      : text open write_mode is "output_file.txt";
---variable row          : line;
---begin
---  
---	if(reset='0') then
---	------------------------------------
---	--elsif(rising_edge(read_out)) then
---	elsif(read_out<1060) then
---		write(row,to_integer(signed(o_data_buffer)), left, 10);			
---		writeline(test_vector,row);
---	end if;
---end process p_dump;
+p_dump  : process(reset,read_out)
+file test_vector      : text open write_mode is "output_file.txt";
+variable row          : line;
+begin
+  
+	if(reset='0') then
+	------------------------------------
+	--elsif(rising_edge(read_out)) then
+	elsif(read_out=3000) then
+		for h in o_coeff'range loop
+			write(row,to_integer(signed(o_coeff(h))), left, 10);			
+			writeline(test_vector,row);
+		end loop;
+	end if;
+end process p_dump;
 
 end behave;
 

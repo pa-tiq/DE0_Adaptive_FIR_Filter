@@ -12,6 +12,7 @@ add wave -noupdate -format AnalogAutomatic -radix decimal /tb_fir_filter/u_fir_f
 add wave -noupdate -format Literal -radix decimal /tb_fir_filter/u_fir_filter_lms/o_data
 add wave -noupdate -format AnalogAutomatic -radix decimal /tb_fir_filter/u_fir_filter_lms/o_error
 add wave -noupdate -format Literal -radix decimal /tb_fir_filter/u_fir_filter_lms/o_error
+add wave -noupdate -format Literal -radix decimal /tb_fir_filter/read_out
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {1995 ns} 0}
 configure wave -namecolwidth 150

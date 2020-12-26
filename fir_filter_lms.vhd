@@ -24,7 +24,7 @@ architecture fpga of fir_filter_lms is
 	TYPE ARRAY_IN   IS ARRAY (0 TO Lfilter-1) OF S_IN_TYPE  ;
 	TYPE ARRAY_OUT  IS ARRAY (0 TO Lfilter-1) OF S_OUT_TYPE ;	
 
-	SIGNAL  d, emu       :  S_IN_TYPE  ;
+	SIGNAL  d, d_temp, emu       :  S_IN_TYPE  ;
 	SIGNAL  y, sxty      :  S_OUT_TYPE ;
 	SIGNAL  e, sxtd 	 :  S_OUT_TYPE ;
 
@@ -74,13 +74,15 @@ begin
 	--END PROCESS;
 
 	Store: PROCESS (clk, reset)  -- Store these data or	coefficients in registers
-	BEGIN                       
+	BEGIN                      
 		IF reset = '0' THEN  -- Asynchronous clear
 			d <= (others=>'0');
+			d_temp <= (others=>'0');
 			x <= (others=>(others=>'0'));
 			f <= (others=>(others=>'0'));
 		ELSIF (rising_edge(clk)) THEN
 			d <= signed(i_ref);
+			--d <= d_temp;
 			x <= signed(i_data) & x(0 to Lfilter-2);
 			FOR k IN f'range LOOP
 				f(k)  <= f(k) + xemu(k)(Wmult-1 DOWNTO Win);
@@ -107,8 +109,7 @@ begin
 			end loop;
 		end if;
 	end process Mult;
-
-	
+		
 	--y <= p(0) + p(1) + p(2) + p(3);  -- Compute ADF output
 
 	Sum2 : process (reset,clk)
@@ -141,8 +142,10 @@ begin
 			o_data <= (others => '0');	
 			o_coeff    <=  (others=>(others=>'0'));
 		ELSIF (rising_edge(clk)) THEN
-			e <= sxtd - sxty;
-			emu <= e(Win DOWNTO 1);    -- from xemu makes mu=1/4
+			e <= sxtd - sxty;			
+			-- TAXA DE APRENDIZADO -------------------------------
+			emu <= e(Win+learning_rate DOWNTO learning_rate+1);    
+			------------------------------------------------------
 			o_error <= std_logic_vector(e);
 			o_data <= std_logic_vector(sxty);    -- Monitor some test signals
 			FOR k IN o_coeff'range LOOP
