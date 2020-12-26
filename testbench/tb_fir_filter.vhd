@@ -3,10 +3,10 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 PACKAGE constants_and_types IS
-	CONSTANT Win     : INTEGER := 10 ; -- Input bit width
+	CONSTANT Win     : INTEGER := 10    ; -- Input bit width
 	CONSTANT Wmult   : INTEGER := 2*Win ; -- Multiplier bit width 2*Win
-	CONSTANT Lfilter : INTEGER := 512  ; -- Filter Length (2)
-	CONSTANT learning_rate : INTEGER :=-1; -- 1 to 4
+	CONSTANT Lfilter : INTEGER := 512   ; -- Filter Length (2)
+	CONSTANT learning_rate : INTEGER :=0; -- 1 to 4
 	SUBTYPE IN_TYPE IS STD_LOGIC_VECTOR(Win-1 DOWNTO 0);
 	SUBTYPE OUT_TYPE IS STD_LOGIC_VECTOR(Wmult-1 DOWNTO 0);
 	TYPE ARRAY_COEFF IS ARRAY (0 to Lfilter-1) OF IN_TYPE;
@@ -28,7 +28,7 @@ architecture behave of tb_fir_filter is
 	
 	constant p : integer := (2**(Win-1))-1; --precision
 	constant pt : integer := p-500;
-	constant pf : integer := p-100;
+	constant pf : integer := p-320;
 
 	constant in_size   : integer := 2000;
 	constant out_size  : integer := 2512;
