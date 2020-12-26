@@ -136,8 +136,7 @@ begin
 			end if;
 
 			if(count < NOISYF'high) then
-				i_ref <= NOISYF(count);					
-				
+				i_ref <= NOISYF(count);			
 			else
 				i_ref <= (others=>'0');
 			end if;

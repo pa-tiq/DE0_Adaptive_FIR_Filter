@@ -20,11 +20,9 @@ architecture fpga of fir_filter_lms is
 
 	SUBTYPE S_IN_TYPE   IS signed(Win-1 downto 0)   ;	
 	SUBTYPE S_MULT_TYPE IS signed(Wmult-1 downto 0) ;
-	SUBTYPE S_ADD_TYPE  IS signed(Wadd-1 downto 0)  ;
 	
 	TYPE ARRAY_DATA IS ARRAY (0 TO Lfilter-1) OF S_IN_TYPE   ;
 	TYPE ARRAY_MULT IS ARRAY (0 TO Lfilter-1) OF S_MULT_TYPE ;	
-	TYPE ARRAY_ADD  IS ARRAY (0 TO Lfilter-1) OF S_ADD_TYPE  ;	
 
 	SIGNAL  d, emu       :  S_IN_TYPE  ;
 	SIGNAL  y, sxty      :  S_MULT_TYPE ;
@@ -32,8 +30,6 @@ architecture fpga of fir_filter_lms is
 
 	SIGNAL  x, f       	 :  ARRAY_DATA  ;    
 	SIGNAL  p, xemu 	 :  ARRAY_MULT  ;
-	SIGNAL  add_st0 	 :  ARRAY_ADD   ;
-
 
 begin
 	dsxt: PROCESS (d)  -- make d a Wmult bit number
@@ -44,11 +40,19 @@ begin
 		END LOOP;
 	END PROCESS dsxt;
 
+	ysxt: PROCESS (y) -- scale y by 128 because x is fraction
+	BEGIN
+		sxty(Win DOWNTO 0) <= y(Wmult-1 DOWNTO Win-1);
+		FOR k IN Wmult-1 DOWNTO Win+1 LOOP
+			sxty(k) <= y(y'high); --y'high = Wmult
+		END LOOP;
+	END PROCESS;
+
 	Store: PROCESS (clk, reset)  -- Store these data or	coefficients in registers
 	BEGIN                      
 		IF reset = '0' THEN  -- Asynchronous clear
 			d <= (others=>'0');
-			d_temp <= (others=>'0');
+			--d_temp <= (others=>'0');
 			x <= (others=>(others=>'0'));
 			f <= (others=>(others=>'0'));
 		ELSIF (rising_edge(clk)) THEN
@@ -60,13 +64,6 @@ begin
 			END LOOP;
 		END IF;
 	END PROCESS Store;
-
-	--MulGen1: FOR i IN 0 TO Lfilter-1 GENERATE
-	--	p(i) <= f(i) * x(i);
-	--END GENERATE;
-	--MulGen2: FOR i IN 0 TO Lfilter-1 GENERATE
-	--	xemu(i) <= emu * x(i);
-	--END GENERATE;	
 
 	Mult : process (reset,clk)
 	begin
@@ -82,7 +79,7 @@ begin
 	end process Mult;
 
 	Sum2 : process (reset,clk)
-		variable add_temp  : S_OUT_TYPE;
+		variable add_temp  : S_MULT_TYPE;
 	begin		
 		if(reset='0') then
 			y  <= (others=>'0');
@@ -116,6 +113,5 @@ begin
 			END LOOP;
 		END IF;
 	END PROCESS p_output;	
-
-
+	
 END fpga;
