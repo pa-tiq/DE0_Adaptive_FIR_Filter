@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 PACKAGE constants_and_types IS
 	CONSTANT Win     : INTEGER := 8 ; -- Input bit width
 	CONSTANT Wmult   : INTEGER := 16 ; -- Multiplier bit width 2*Win
-	CONSTANT Lfilter : INTEGER := 2  ; -- Filter Length (2)
+	CONSTANT Lfilter : INTEGER := 4  ; -- Filter Length (2)
 	SUBTYPE IN_TYPE IS STD_LOGIC_VECTOR(Win-1 DOWNTO 0);
 	SUBTYPE OUT_TYPE IS STD_LOGIC_VECTOR(Wmult-1 DOWNTO 0);
 	TYPE ARRAY_COEFF IS ARRAY (0 to Lfilter-1) OF IN_TYPE;
@@ -71,7 +71,7 @@ port map(
 	i_ref       => i_ref 		,
 	o_coeff     => o_coeff  ,
 	o_data     	=> o_data ,
-	o_error     => o_error       );
+	o_error     => o_error     );
 
 p_input : process (reset,clk)
 	variable count 		: integer := 0;
@@ -83,10 +83,10 @@ begin
 		first_time	:='0';
 	elsif(falling_edge(clk)) then
 		if(first_time='0') then
-			for k in 0 to noisy_size-1 loop
+			for k in NOISYF'range loop
 				NOISYF(k)  <=  std_logic_vector(to_signed(NOISYF_ARRAY(k),Win));
 			end loop;			
-			for j in 0 to noisy_size-1 loop
+			for j in NOISY'range loop
 				NOISY(j)  <=  std_logic_vector(to_signed(NOISY_ARRAY(j),Win));
 			end loop;
 			first_time := '1';

@@ -2,15 +2,15 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate -format Logic -radix unsigned /tb_fir_filter/u_fir_filter_lms/clk
 add wave -noupdate -format Logic -radix unsigned /tb_fir_filter/u_fir_filter_lms/reset
-add wave -noupdate -format AnalogStep -radix decimal /tb_fir_filter/u_fir_filter_lms/i_data
+add wave -noupdate -format AnalogAutomatic -radix decimal /tb_fir_filter/u_fir_filter_lms/i_data
 add wave -noupdate -format Logic -radix decimal /tb_fir_filter/u_fir_filter_lms/i_data
-add wave -noupdate -format AnalogStep -radix decimal /tb_fir_filter/u_fir_filter_lms/i_ref
+add wave -noupdate -format AnalogAutomatic -radix decimal /tb_fir_filter/u_fir_filter_lms/i_ref
 add wave -noupdate -format Logic -radix decimal /tb_fir_filter/u_fir_filter_lms/i_ref
-add wave -noupdate -format Analog -radix decimal /tb_fir_filter/u_fir_filter_lms/o_coeff
+add wave -noupdate -format AnalogAutomatic -radix decimal /tb_fir_filter/u_fir_filter_lms/o_coeff
 add wave -noupdate -format Logic -radix decimal /tb_fir_filter/u_fir_filter_lms/o_coeff
-add wave -noupdate -format AnalogStep -radix decimal /tb_fir_filter/u_fir_filter_lms/o_data
+add wave -noupdate -format AnalogAutomatic -radix decimal /tb_fir_filter/u_fir_filter_lms/o_data
 add wave -noupdate -format Literal -radix decimal /tb_fir_filter/u_fir_filter_lms/o_data
-add wave -noupdate -format AnalogStep -radix decimal /tb_fir_filter/u_fir_filter_lms/o_error
+add wave -noupdate -format AnalogAutomatic -radix decimal /tb_fir_filter/u_fir_filter_lms/o_error
 add wave -noupdate -format Literal -radix decimal /tb_fir_filter/u_fir_filter_lms/o_error
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {1995 ns} 0}
